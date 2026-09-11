@@ -8,3 +8,4 @@ node_modules/
 static/
 staticfiles/
 .pytest_cache/
+trust-policy.json
