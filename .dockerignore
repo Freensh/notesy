@@ -1,0 +1,10 @@
+.git
+.env
+.sessions/
+db.sqlite3
+__pycache__/
+*.pyc
+node_modules/
+static/
+staticfiles/
+.pytest_cache/

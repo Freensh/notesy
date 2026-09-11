@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: notesy
+      POSTGRES_USER: notesy
+      POSTGRES_PASSWORD: notesy_dev_pw
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U notesy"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+ 
+  app:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      POSTGRES_HOST: db
+      POSTGRES_DB: notesy
+      POSTGRES_USER: notesy
+      POSTGRES_PASSWORD: notesy_dev_pw
+      POSTGRES_PORT: "5432"
+      DJANGO_DEBUG: "False"
+      DJANGO_ALLOWED_HOSTS: "*"
+      DJANGO_SECRET_KEY: "compose-local-only-key"
+    depends_on:
+      db:
+        condition: service_healthy
+ 
+volumes:
+  pgdata:
