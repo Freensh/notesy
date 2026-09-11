@@ -96,3 +96,14 @@ jobs:
           docker build -t local-build:$IMAGE_TAG .
           docker tag local-build:$IMAGE_TAG ${{ steps.ecr-login.outputs.registry }}/notesy:$IMAGE_TAG
           docker tag local-build:$IMAGE_TAG ${{ steps.ecr-login.outputs.registry }}/notesy:latest
+          docker tag local-build:$IMAGE_TAG ${{ secrets.JFROG_URL }}/notesy-docker-local/notesy:$IMAGE_TAG
+          docker tag local-build:$IMAGE_TAG ${{ secrets.JFROG_URL }}/notesy-docker-local/notesy:latest
+ 
+      - name: Push to both registries
+        run: |
+          IMAGE_TAG=${{ github.sha }}
+          docker push ${{ steps.ecr-login.outputs.registry }}/notesy:$IMAGE_TAG
+          docker push ${{ steps.ecr-login.outputs.registry }}/notesy:latest
+          docker push ${{ secrets.JFROG_URL }}/notesy-docker-local/notesy:$IMAGE_TAG
+          docker push ${{ secrets.JFROG_URL }}/notesy-docker-local/notesy:latest
+
