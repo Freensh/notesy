@@ -1,8 +1,9 @@
 name: CI
  
 on:
-  pull_request:
   push:
+    branches: [feature/ci, staging]
+  pull_request:
     branches: [main]
  
 jobs:
