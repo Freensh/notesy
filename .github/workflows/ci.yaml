@@ -102,11 +102,19 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
+      - name: Start the scan manually
+        run: |
+          # 1. Start the scan manually
+          aws ecr start-image-scan \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-id imageTag="$IMAGE_TAG"
       - name: Wait for ECR's scan to finish
         run: |
+          # 2. Wait for it to complete
           aws ecr wait image-scan-complete \
             --repository-name "$ECR_REPOSITORY" \
             --image-id imageTag="$IMAGE_TAG"
+
       - name: Fail on CRITICAL or HIGH findings
         run: |
           COUNT=$(aws ecr describe-image-scan-findings \
