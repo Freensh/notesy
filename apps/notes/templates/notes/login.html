@@ -1,13 +1,19 @@
 {% extends "notes/base.html" %}
-{% block title %}Log in &middot; Notesy{% endblock %}
+{% block title %}Log in &middot; Scrib{% endblock %}
+{% block nav_anon %}{% endblock %}
 {% block content %}
-  <h2>Log in</h2>
-  <form method="post">
-    {% csrf_token %}
-    <p><label>Username <input name="username" autofocus></label></p>
-    <p><label>Password <input type="password" name="password"></label></p>
-    {% if error %}<p class="error">{{ error }}</p>{% endif %}
-    <button type="submit">Log in</button>
-  </form>
-  <p style="margin-top:2rem;color:#888">Try <code>demo</code> / <code>demo</code>.</p>
+  <div class="auth">
+    <div class="auth__card">
+      <h1>Log in</h1>
+      <p class="auth__lead">Welcome back to Scrib.</p>
+      <form method="post">
+        {% csrf_token %}
+        <label>Username <input name="username" autocomplete="username" autofocus></label>
+        <label>Password <input type="password" name="password" autocomplete="current-password"></label>
+        {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+        <button type="submit" class="btn--block">Log in</button>
+      </form>
+    </div>
+    <p class="auth__hint">Try <code>demo</code> / <code>demo</code>.</p>
+  </div>
 {% endblock %}

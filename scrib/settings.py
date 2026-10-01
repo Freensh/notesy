@@ -1,4 +1,4 @@
-"""Django settings for notesy."""
+"""Django settings for scrib."""
 import os
 from pathlib import Path
 
@@ -42,7 +42,7 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-ROOT_URLCONF = "notesy.urls"
+ROOT_URLCONF = "scrib.urls"
 
 TEMPLATES = [
     {
@@ -60,7 +60,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "notesy.wsgi.application"
+WSGI_APPLICATION = "scrib.wsgi.application"
 
 
 POSTGRES_HOST = os.environ.get("POSTGRES_HOST")

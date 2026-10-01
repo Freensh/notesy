@@ -7,16 +7,16 @@
     <div class="summary"><strong>Summary:</strong> {{ note.summary }}</div>
   {% endif %}
   <div class="actions">
-    <button
+    <button class="btn--ghost"
       hx-get="{% url 'note_edit' note.pk %}"
       hx-target="#note-{{ note.pk }}"
       hx-swap="outerHTML">Edit</button>
-    <button
+    <button class="btn--ghost"
       hx-post="{% url 'note_summarize' note.pk %}"
       hx-target="#note-{{ note.pk }}"
       hx-swap="outerHTML"
       hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>Summarize</button>
-    <button
+    <button class="btn--ghost btn--danger"
       hx-delete="{% url 'note_delete' note.pk %}"
       hx-target="#note-{{ note.pk }}"
       hx-swap="outerHTML"

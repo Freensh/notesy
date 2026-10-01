@@ -18,6 +18,13 @@ def healthz(request):
         return JsonResponse({"status": "error", "detail": str(exc)}, status=503)
 
 
+def landing_view(request):
+    """Public home page; signed-in users get their note list at the same URL."""
+    if request.user.is_authenticated:
+        return note_list(request)
+    return render(request, "notes/landing.html")
+
+
 def login_view(request):
     if request.method == "POST":
         username = request.POST.get("username")

@@ -1,5 +1,5 @@
 <form
-  class="note-card"
+  class="note-card note-editor"
   {% if note %}
     hx-post="{% url 'note_edit' note.pk %}"
     hx-target="#note-{{ note.pk }}"

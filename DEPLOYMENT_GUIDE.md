@@ -1,8 +1,8 @@
-# Deploying Notesy
+# Deploying Scrib
 
 ## The situation
 
-Notesy has been living on one engineer's laptop since it was built. It works, people use it, but the only way to run it right now is "clone the repo, hope your Python and Node versions line up, and remember the seed command." There's a `.github/workflows/ci.yml` in the repo, but it barely does anything — it installs dependencies and runs `pytest || true`, which means it reports green even when tests fail.
+Scrib has been living on one engineer's laptop since it was built. It works, people use it, but the only way to run it right now is "clone the repo, hope your Python and Node versions line up, and remember the seed command." There's a `.github/workflows/ci.yml` in the repo, but it barely does anything — it installs dependencies and runs `pytest || true`, which means it reports green even when tests fail.
 
 You've been asked to take this from "runs on my laptop" to "runs in a container, builds itself, and publishes an image the rest of the team can actually pull and run."
 
@@ -17,7 +17,7 @@ Nobody's asking you to touch how the app itself works. This is an infrastructure
 ```
 .
 ├── manage.py
-├── notesy/                  # Django project (settings, urls, wsgi/asgi)
+├── scrib/                  # Django project (settings, urls, wsgi/asgi)
 ├── apps/notes/              # the app itself — models, views, templates
 │   └── static_src/          # TypeScript source for the small client bundle
 ├── package.json             # esbuild + tsc toolchain
@@ -27,7 +27,7 @@ Nobody's asking you to touch how the app itself works. This is an infrastructure
 └── README.md
 ```
 
-The app currently defaults to SQLite and reads a couple of config values (`SECRET_KEY`, `DEBUG`) as hardcoded values in `notesy/settings.py`. You'll need to parameterize those via environment variables before this is something you can safely put in an image — a container that only works with one hardcoded secret and one hardcoded debug flag isn't really deployable. That's expected prep work for Milestone 1, not a separate task.
+The app currently defaults to SQLite and reads a couple of config values (`SECRET_KEY`, `DEBUG`) as hardcoded values in `scrib/settings.py`. You'll need to parameterize those via environment variables before this is something you can safely put in an image — a container that only works with one hardcoded secret and one hardcoded debug flag isn't really deployable. That's expected prep work for Milestone 1, not a separate task.
 
 ---
 
@@ -64,7 +64,7 @@ On merge to `main`, the pipeline should build the image once and push it to **bo
 - For JFrog, you'll need an access token (or username/password) stored as GitHub secrets, and your Artifactory instance's Docker registry URL.
 
 **Setting up the registries (one-time, do this first):**
-- **ECR**: create a repository (`aws ecr create-repository --repository-name notesy`), and set up an IAM role trusted for GitHub's OIDC provider with push permissions to it.
+- **ECR**: create a repository (`aws ecr create-repository --repository-name scrib`), and set up an IAM role trusted for GitHub's OIDC provider with push permissions to it.
 - **JFrog**: a free Artifactory Cloud instance is enough for this — create a Docker repository in it and generate an access token scoped to push images.
 - Store `AWS_ECR_DEPLOY_ROLE_ARN`, `JFROG_URL`, `JFROG_USERNAME`, and `JFROG_ACCESS_TOKEN` (or equivalent) as GitHub Actions secrets.
 

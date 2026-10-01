@@ -4,34 +4,49 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Notesy{% endblock %}</title>
+  <title>{% block title %}Scrib{% endblock %}</title>
+  <meta name="description" content="{% block description %}Scrib is a fast, simple notes tool for your team.{% endblock %}">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="icon" href="{% static 'images/favicon.ico' %}" sizes="48x48">
+  <link rel="icon" type="image/png" sizes="32x32" href="{% static 'images/favicon-32.png' %}">
+  <link rel="apple-touch-icon" href="{% static 'images/favicon-180.png' %}">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Scrib">
+  <meta property="og:title" content="{% block og_title %}Scrib: quick notes for your team{% endblock %}">
+  <meta property="og:description" content="Fast to write. Easy to find.">
+  <meta property="og:image" content="{{ request.scheme }}://{{ request.get_host }}{% static 'images/og-image.jpg' %}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="stylesheet" href="{% static 'js/styles.css' %}">
   <script src="https://unpkg.com/htmx.org@1.9.12"></script>
   <script src="{% static 'js/editor.js' %}" defer></script>
   <script src="{% static 'js/shortcuts.js' %}" defer></script>
-  <style>
-    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; }
-    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
-    .note-card { border: 1px solid #ddd; border-radius: 6px; padding: 1rem; margin-bottom: 1rem; }
-    .note-card h3 { margin: 0 0 0.5rem 0; }
-    .note-card .meta { color: #888; font-size: 0.85rem; }
-    .note-card .actions { margin-top: 0.5rem; }
-    .note-card .summary { background: #f5f5f5; padding: 0.5rem; border-radius: 4px; margin-top: 0.5rem; }
-    button, .btn { padding: 0.4rem 0.8rem; border: 1px solid #888; background: #fff; cursor: pointer; border-radius: 4px; }
-    input, textarea { width: 100%; padding: 0.4rem; box-sizing: border-box; }
-    textarea { min-height: 6rem; font-family: inherit; }
-    .error { color: #c00; }
-  </style>
 </head>
 <body>
-  <header>
-    <h1><a href="/" style="text-decoration:none;color:inherit">Notesy</a></h1>
-    {% if user.is_authenticated %}
-      <div>
-        <span>{{ user.username }}</span>
-        <a href="{% url 'logout' %}" class="btn">Log out</a>
-      </div>
-    {% endif %}
+  <header class="site-header">
+    <div class="container site-header__inner">
+      <a class="brand" href="/" aria-label="Scrib home"><img src="{% static 'images/scrib-wordmark.webp' %}" alt="Scrib" width="120" height="32"></a>
+      <nav class="nav">
+        {% if user.is_authenticated %}
+          <span class="nav__user">{{ user.username }}</span>
+          <a href="{% url 'logout' %}" class="btn">Log out</a>
+        {% else %}
+          {% block nav_anon %}<a href="{% url 'login' %}" class="btn btn--primary">Log in</a>{% endblock %}
+        {% endif %}
+      </nav>
+    </div>
   </header>
-  <main>{% block content %}{% endblock %}</main>
+  {% block body %}
+  <main class="page">
+    <div class="container container--app">{% block content %}{% endblock %}</div>
+  </main>
+  {% endblock %}
+  <footer class="site-footer">
+    <div class="container site-footer__inner">
+      <span>&copy; Scrib</span>
+      <span>Simple notes for your team.</span>
+    </div>
+  </footer>
 </body>
 </html>
