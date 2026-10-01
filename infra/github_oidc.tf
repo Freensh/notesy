@@ -76,6 +76,7 @@ data "aws_iam_policy_document" "ecr_push" {
       "ecr:InitiateLayerUpload",
       "ecr:PutImage",
       "ecr:UploadLayerPart",
+      "ecr:DescribeImageScanFindings"
     ]
     resources = [aws_ecr_repository.app.arn]
   }
