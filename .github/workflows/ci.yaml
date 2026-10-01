@@ -98,6 +98,7 @@ jobs:
       AWS_REGION: ${{ vars.AWS_REGION }}
       ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
       ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_TASK_DEFINITION: ${{ vars.ECS_TASK }}
       ECS_SERVICE: ${{ vars.ECS_SERVICE }}
       IMAGE_TAG: ${{ github.sha }}
     steps:
@@ -108,7 +109,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - name: Download the current task definition
         run: |
-          aws ecs describe-task-definition --task-definition "$ECS_SERVICE" \
+          aws ecs describe-task-definition --task-definition "$ECS_TASK_DEFINITION" \
             --query taskDefinition --output json > task-definition.json
       - name: Render the new image in
         id: render
