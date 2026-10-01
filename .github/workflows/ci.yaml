@@ -115,12 +115,22 @@ jobs:
           aws ecr wait image-scan-complete \
             --repository-name "$ECR_REPOSITORY" \
             --image-id imageTag="$IMAGE_TAG"
-
+            
       - name: Fail on CRITICAL or HIGH findings
         run: |
+          # 1. Print the details of the CRITICAL and HIGH vulnerabilities to the logs
+          echo "Vulnerability Details:"
+          aws ecr describe-image-scan-findings \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-id imageTag="$IMAGE_TAG" \
+            --query 'imageScanFindings.findings[?severity==`CRITICAL` || severity==`HIGH`].[name, severity, uri]' \
+            --output table
+
+          # 2. Count them and fail the pipeline if necessary
           COUNT=$(aws ecr describe-image-scan-findings \
             --repository-name "$ECR_REPOSITORY" \
             --image-id imageTag="$IMAGE_TAG" \
             --query 'length(imageScanFindings.findings[?severity==`CRITICAL` || severity==`HIGH`])')
-          echo "CRITICAL/HIGH findings: $COUNT"
+          
+          echo "Total CRITICAL/HIGH findings: $COUNT"
           if [ "$COUNT" -gt 0 ]; then exit 1; fi
