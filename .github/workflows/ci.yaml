@@ -89,3 +89,29 @@ jobs:
             ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
+  image-scan:
+    runs-on: ubuntu-latest
+    needs: docker-build-and-publish
+    permissions: { id-token: write, contents: read }
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Wait for ECR's scan to finish
+        run: |
+          aws ecr wait image-scan-complete \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-id imageTag="$IMAGE_TAG"
+      - name: Fail on CRITICAL or HIGH findings
+        run: |
+          COUNT=$(aws ecr describe-image-scan-findings \
+            --repository-name "$ECR_REPOSITORY" \
+            --image-id imageTag="$IMAGE_TAG" \
+            --query 'length(imageScanFindings.findings[?severity==`CRITICAL` || severity==`HIGH`])')
+          echo "CRITICAL/HIGH findings: $COUNT"
+          if [ "$COUNT" -gt 0 ]; then exit 1; fi
