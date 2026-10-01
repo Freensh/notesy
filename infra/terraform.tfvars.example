@@ -1,0 +1,44 @@
+# Copy to terraform.tfvars (git-ignored) and adjust.
+
+project_name = "scrib"
+environment  = "prod"
+aws_region   = "us-east-1"
+
+tags = {
+  Owner = "platform-team"
+}
+
+vpc_cidr             = "10.0.0.0/16"
+public_subnet_cidrs  = ["10.0.1.0/24", "10.0.2.0/24"]
+private_subnet_cidrs = ["10.0.11.0/24", "10.0.12.0/24"]
+
+ecr_repository_name = "scrib"
+placeholder_image   = "mendhak/http-https-echo:42"
+container_port      = 8000
+health_check_path   = "/healthz/"
+task_cpu            = 256
+task_memory         = 512
+desired_count       = 1
+log_retention_days  = 14
+
+db_name                = "scrib"
+db_username            = "scrib"
+db_engine_version      = "16"
+db_instance_class      = "db.t4g.micro"
+db_allocated_storage   = 20
+db_multi_az            = false
+db_skip_final_snapshot = true
+
+# Leave empty to use only the CloudFront default domain (no domain needed).
+# Set to an existing Route53 public zone that already has an ISSUED
+# "*.<domain_name>" ACM certificate in us-east-1 to get https://scrib.<domain_name>.
+domain_name            = ""
+subdomain              = "scrib"
+cloudfront_price_class = "PriceClass_100"
+
+# Set create_github_oidc_provider = false if the account already has the
+# token.actions.githubusercontent.com provider.
+create_github_oidc_provider = true
+github_org                  = "your-github-org"
+github_repo                 = "notesy-app"
+# github_oidc_subjects      = ["repo:your-github-org/notesy-app:ref:refs/heads/main"]
