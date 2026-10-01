@@ -15,3 +15,34 @@ jobs:
       - uses: gitleaks/gitleaks-action@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  backend-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env: { POSTGRES_DB: scrib_test, POSTGRES_USER: scrib, POSTGRES_PASSWORD: scrib_test_pw }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 5
+    env:
+      POSTGRES_HOST: localhost
+      POSTGRES_DB: scrib_test
+      POSTGRES_USER: scrib
+      POSTGRES_PASSWORD: scrib_test_pw
+      DJANGO_SECRET_KEY: "ci-test-key"
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: "pip" }
+      - run: pip install -r requirements.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: "22", cache: "npm" }
+      - run: npm ci
+      - run: npm run build
+      - run: python manage.py collectstatic --noinput
+      - run: pytest -v --cov=. --cov-report=xml
+      - name: Upload coverage for the quality gate
+        uses: actions/upload-artifact@v4
+        with: { name: coverage-report, path: coverage.xml, retention-days: 1 }
+
