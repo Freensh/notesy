@@ -6,3 +6,4 @@ requests==2.20.0
 python-dotenv
 pytest
 pytest-django
+pytest-cov>=4.1.0
