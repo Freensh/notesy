@@ -20,6 +20,17 @@ ALLOWED_HOSTS = (
     else ["*"]
 )
 
+# Entries need the full scheme (https://example.com), unlike ALLOWED_HOSTS.
+_csrf_trusted_origins = os.environ.get("CSRF_TRUSTED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = (
+    [origin.strip() for origin in _csrf_trusted_origins.split(",") if origin.strip()]
+    if _csrf_trusted_origins
+    else []
+)
+
+# CloudFront terminates TLS; trust the proxy chain's X-Forwarded-Proto.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",

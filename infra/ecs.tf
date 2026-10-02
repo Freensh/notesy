@@ -108,6 +108,7 @@ resource "aws_ecs_task_definition" "app" {
         { name = "POSTGRES_PORT", value = tostring(aws_db_instance.main.port) },
         { name = "DJANGO_DEBUG", value = "False" },
         { name = "DJANGO_ALLOWED_HOSTS", value = var.django_allowed_hosts },
+        { name = "CSRF_TRUSTED_ORIGINS", value = "https://${local.app_host}" },
         { name = "RUN_MIGRATIONS", value = "True" },
         { name = "HTTP_PORT", value = tostring(var.container_port) },
       ]
