@@ -1,2 +1,4 @@
 .env
 trust-policy.json
+.sessions/
+sonar-project.properties
