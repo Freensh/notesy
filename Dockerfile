@@ -11,7 +11,7 @@ RUN npm run build            # prebuild hook runs typecheck first; fails the bui
 FROM python:3.12-slim AS runtime
 WORKDIR /app
  
-RUN groupadd -r appuser && useradd -r -g appuser appuser
+RUN groupadd -r appuser && useradd -r -m -g appuser appuser
  
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
@@ -19,7 +19,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 COPY --from=frontend-build /app/static ./static
  
-ENV DJANGO_SETTINGS_MODULE=notesy.settings \
+ENV DJANGO_SETTINGS_MODULE=scrib.settings \
     DJANGO_DEBUG=False
  
 RUN python manage.py collectstatic --noinput
@@ -30,4 +30,4 @@ RUN chmod +x /entrypoint.sh
 USER appuser
 EXPOSE 8000
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["gunicorn", "notesy.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]
+CMD ["gunicorn", "scrib.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "3"]

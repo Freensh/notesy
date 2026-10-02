@@ -1,0 +1,38 @@
+{
+  "family": "notesy",
+  "networkMode": "awsvpc",
+  "requiresCompatibilities": ["FARGATE"],
+  "cpu": "256",
+  "memory": "512",
+  "containerDefinitions": [
+    {
+      "name": "notesy",
+      "image": "<ecr-registry>/notesy:<sha>",
+      "portMappings": [{ "containerPort": 8000 }],
+      "environment": [
+        { "name": "POSTGRES_HOST", "value": "notesy-db.csdse24oq7vv.us-east-1.rds.amazonaws.com" },
+        { "name": "POSTGRES_DB", "value": "notesy" },
+        { "name": "POSTGRES_USER", "value": "notesy" },
+        { "name": "POSTGRES_PORT", "value": "5432" },
+        { "name": "DJANGO_DEBUG", "value": "False" },
+        { "name": "DJANGO_ALLOWED_HOSTS", "value": "*" }
+      ],
+      "secrets": [
+        { "name": "DJANGO_SECRET_KEY", "valueFrom": "arn:aws:ssm:us-east-1:885684264653:parameter/notesy/DJANGO_SECRET_KEY" },
+        { "name": "POSTGRES_PASSWORD", "valueFrom": "arn:aws:secretsmanager:us-east-1:885684264653:secret:rds!db-67e827ae-1797-4d25-b2b9-c642779db6ed-UGFbjG:password::" }
+      ],
+      "healthCheck": {
+        "command": ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz/')\" || exit 1"],
+        "interval": 30, "timeout": 5, "retries": 3
+      },
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+          "awslogs-group": "/ecs/notesy",
+          "awslogs-region": "us-east-1",
+          "awslogs-stream-prefix": "notesy"
+        }
+      }
+    }
+  ]
+}

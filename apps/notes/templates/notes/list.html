@@ -1,9 +1,11 @@
 {% extends "notes/base.html" %}
-{% block title %}Your notes &middot; Notesy{% endblock %}
+{% load static %}
+{% block title %}Your notes &middot; Scrib{% endblock %}
 {% block content %}
-  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
-    <h2>Your notes</h2>
+  <div class="page-head">
+    <h1>Your notes</h1>
     <button
+      class="btn--primary"
       hx-get="{% url 'note_create' %}"
       hx-target="#new-note-slot"
       hx-swap="innerHTML">
@@ -11,13 +13,19 @@
     </button>
   </div>
 
-  <div id="new-note-slot"></div>
+  <div class="notes-area">
+    <div id="new-note-slot"></div>
 
-  <div id="note-list">
-    {% for note in notes %}
-      {% include "notes/_note_card.html" with note=note %}
-    {% empty %}
-      <p style="color:#888">No notes yet. Click "New note" to make one.</p>
-    {% endfor %}
+    <div id="note-list">
+      {% for note in notes %}
+        {% include "notes/_note_card.html" with note=note %}
+      {% endfor %}
+    </div>
+
+    <div class="empty-state">
+      <img src="{% static 'images/empty-state.webp' %}" alt="" width="640" height="480">
+      <h2>No notes yet</h2>
+      <p>Click "New note" to make one.</p>
+    </div>
   </div>
 {% endblock %}

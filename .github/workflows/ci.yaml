@@ -4,106 +4,141 @@ on:
   push:
     branches: [feature/ci, staging, main]
   pull_request:
-    branches: [main]
+    branches: [main, staging]
  
 jobs:
+  secret-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   backend-test:
     runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16-alpine
-        env:
-          POSTGRES_DB: notesy_test
-          POSTGRES_USER: notesy
-          POSTGRES_PASSWORD: notesy_test_pw
+        env: { POSTGRES_DB: scrib_test, POSTGRES_USER: scrib, POSTGRES_PASSWORD: scrib_test_pw }
         ports: ["5432:5432"]
         options: >-
-          --health-cmd pg_isready
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 5
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 5
     env:
       POSTGRES_HOST: localhost
-      POSTGRES_DB: notesy_test
-      POSTGRES_USER: notesy
-      POSTGRES_PASSWORD: notesy_test_pw
-      POSTGRES_PORT: "5432"
+      POSTGRES_DB: scrib_test
+      POSTGRES_USER: scrib
+      POSTGRES_PASSWORD: scrib_test_pw
       DJANGO_SECRET_KEY: "ci-test-key"
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0   # needed for SonarCloud's new-code analysis
+        with: { fetch-depth: 0 }
       - uses: actions/setup-python@v5
-        with: { python-version: "3.12" }
+        with: { python-version: "3.12", cache: "pip" }
       - run: pip install -r requirements.txt
       - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+        with: { node-version: "22", cache: "npm" }
       - run: npm ci
-      - run: npm run build          # runs prebuild -> typecheck, then esbuild 
+      - run: npm run build
       - run: python manage.py collectstatic --noinput
-      - run: pytest -v
- 
-  docker-build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false          # this job only proves the image builds; Milestone 3 handles publishing
+      - run: pytest -v --cov=. --cov-report=xml
+      - name: Upload coverage for the quality gate
+        uses: actions/upload-artifact@v4
+        with: { name: coverage-report, path: coverage.xml, retention-days: 1 }
   sonarcloud:
     runs-on: ubuntu-latest
     needs: backend-test
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: SonarSource/sonarqube-scan-action@master
+        with: { fetch-depth: 0 }
+      - name: Download coverage report
+        uses: actions/download-artifact@v4
+        with: { name: coverage-report }
+      - uses: SonarSource/sonarqube-scan-action@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-  publish:
+        with:
+          args: >
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+  docker-build-and-publish:
     runs-on: ubuntu-latest
-    needs: [backend-test, docker-build]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      id-token: write     # required for OIDC
-      contents: read
+    needs: backend-test
+    permissions: { id-token: write, contents: read }
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      IMAGE_TAG: ${{ github.sha }}
     steps:
       - uses: actions/checkout@v4
- 
-      - name: Configure AWS credentials via OIDC
-        uses: aws-actions/configure-aws-credentials@v4
+      - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ secrets.ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
- 
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
       - name: Log in to ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
- 
-      - name: Log in to JFrog
-        uses: docker/login-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build, and push only on main
+        uses: docker/build-push-action@v6
         with:
-          registry: ${{ secrets.JFROG_URL }}
-          username: ${{ secrets.JFROG_USERNAME }}
-          password: ${{ secrets.JFROG_ACCESS_TOKEN }}
- 
-      - name: Build once, tag for both registries
+          context: .
+          push: true
+          provenance: false
+          tags: |
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+            ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [docker-build-and-publish ]
+    permissions: { id-token: write, contents: read }
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION }}
+      ECR_REPOSITORY: ${{ vars.ECR_REPOSITORY }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_TASK_DEFINITION: ${{ vars.ECS_TASK }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+      IMAGE_TAG: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+      - name: Log in to ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Download the current task definition
         run: |
-          IMAGE_TAG=${{ github.sha }}
-          docker build -t local-build:$IMAGE_TAG .
-          docker tag local-build:$IMAGE_TAG ${{ steps.ecr-login.outputs.registry }}/notesy:$IMAGE_TAG
-          docker tag local-build:$IMAGE_TAG ${{ steps.ecr-login.outputs.registry }}/notesy:latest
-          docker tag local-build:$IMAGE_TAG ${{ secrets.JFROG_URL }}/notesy-docker-local/notesy:$IMAGE_TAG
-          docker tag local-build:$IMAGE_TAG ${{ secrets.JFROG_URL }}/notesy-docker-local/notesy:latest
- 
-      - name: Push to both registries
+          aws ecs describe-task-definition --task-definition "$ECS_TASK_DEFINITION" \
+            --query taskDefinition --output json > task-definition.json
+      - name: Render the new image in
+        id: render
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: scrib
+          image: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
+      - name: Deploy it
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
+        with:
+          task-definition: ${{ steps.render.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE }}
+          cluster: ${{ env.ECS_CLUSTER }}
+          wait-for-service-stability: true
+  smoke-test:
+    runs-on: ubuntu-latest
+    needs: deploy
+    env:
+      APP_URL: ${{ vars.APP_URL }}
+    steps:
+      - name: Confirm the app actually responds
         run: |
-          IMAGE_TAG=${{ github.sha }}
-          docker push ${{ steps.ecr-login.outputs.registry }}/notesy:$IMAGE_TAG
-          docker push ${{ steps.ecr-login.outputs.registry }}/notesy:latest
-          docker push ${{ secrets.JFROG_URL }}/notesy-docker-local/notesy:$IMAGE_TAG
-          docker push ${{ secrets.JFROG_URL }}/notesy-docker-local/notesy:latest
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$APP_URL/healthz/")
+          echo "Got status $STATUS"
+          if [ "$STATUS" != "200" ]; then exit 1; fi
+
 

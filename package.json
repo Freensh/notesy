@@ -1,11 +1,11 @@
 {
-  "name": "notesy-frontend",
+  "name": "scrib-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "esbuild apps/notes/static_src/*.ts --bundle --outdir=static/js --watch --sourcemap",
+    "dev": "esbuild apps/notes/static_src/*.ts apps/notes/static_src/*.css --bundle --outdir=static/js --watch --sourcemap",
     "prebuild": "npm run typecheck",
-    "build": "esbuild apps/notes/static_src/*.ts --bundle --outdir=static/js --minify",
+    "build": "esbuild apps/notes/static_src/*.ts apps/notes/static_src/*.css --bundle --outdir=static/js --minify",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {

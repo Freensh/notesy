@@ -1,4 +1,4 @@
-# Notesy
+# Scrib
 
 A small Django + HTMX notes app.
 
